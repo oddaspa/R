@@ -7,7 +7,7 @@ library('xml2')
 library("WriteXLS")
 
 # Set path to xls file
-setwd('C:\\Users\\oddgu\\Documents')
+setwd('C:\\Users\\username\\folder')
 
 
 # Enter excel as CSV file
