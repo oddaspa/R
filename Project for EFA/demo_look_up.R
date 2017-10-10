@@ -1,20 +1,29 @@
+# Before excecuting you will need to install all packages
+
 #install.packages('rvest')
+#install.packages('WriteXLS')
+#install.packages('RCurl')
 
 #Loading the packages required
 library('rvest')
 library('xml2')
 library("WriteXLS")
 library("RCurl")
+library("jsonlite")
 # Set path to xls file
 setwd('C:\\Users\\oddgu\\Documents')
 
 
 # Enter excel as CSV file
 data1 <- read.csv(file.choose(), header=TRUE, sep=";")
-
+print("Reading data")
 # Creating list for phone numbers to append to excel sheet
 phone_number_vec <- c()
 shareholders <- c()
+progress <- floor(nrow(data1)/10)
+progressbar <- "Progress |          |"
+print(progressbar)
+p <- 0
 for(i in 1:nrow(data1)){
   
   # Setting found data to F
@@ -73,7 +82,7 @@ for(i in 1:nrow(data1)){
     if(is_AS){
       next
     }else{
-    print("URL does not exist!")
+    #print("URL does not exist!")
     phone_number_vec <- c(phone_number_vec, "Did not find a phone")
     first_shareh <- paste(first_shareh, collapse = ' ')
     shareholders <- c(shareholders, first_shareh)
@@ -93,9 +102,33 @@ for(i in 1:nrow(data1)){
   # Strips for correct phone
   for(k in 1:length(rank_data)){
     if(grepl(area, rank_data[k])){
+      name_link <- html_nodes(webpage, '.stripped-link')
+      # we need to dig deeper
+      beta <- name_link[5]
+      
+      omega <-strsplit(as.character(beta), "[\"]")
+      test_string <- omega[[1]][2]
+      stripped_string <- gsub("?whiteself=1","",test_string)
+      stripped_string <- gsub("%C3%A5","AA",stripped_string)
+      stripped_string <- gsub("%C3%B8","OE",stripped_string)
+      stripped_string <- gsub("%C3%A9","E",stripped_string)
+      stripped_string <- gsub("%C3%A6","E",stripped_string)
+      print(stripped_string)
+      new_url <- paste('https://www.gulesider.no',stripped_string, sep="")
+      
+      # Reading the HTML code from the website
+      webpage2 <- read_html(new_url)
+      
+      # Using the CSS key .hit-address
+      rank_data_html2 <- html_nodes(webpage2,'.phone-number')
+      
+      # Converting the ranking data to text
+      rank_data2 <- html_text(rank_data_html2)
+      epsilon <- rank_data2[1]
+      
       alpha = unlist(strsplit(rank_data[k], "[\n]"))
       phone_number <- alpha[2]
-      phone_number_vec <- c(phone_number_vec,phone_number)
+      phone_number_vec <- c(phone_number_vec,epsilon)
       fd = TRUE
       break
     }
@@ -103,7 +136,7 @@ for(i in 1:nrow(data1)){
   
   # Failproofing for loss of data
   if(!fd){
-    print("failproof for loss of data")
+    #print("failproof for loss of data")
     phone_number_vec <- c(phone_number_vec, "Did not find a phone")
   }
   
@@ -121,7 +154,16 @@ for(i in 1:nrow(data1)){
   url_name <- ""
   webpage <- ""
   phone_number  <- ""
+  
+  # update progress
+  if((i %% progress) == 0){
+    #substring2(progressbar, 11+p,11+p) <- "#"
+    p<-p+1
+    
+    print(p*10)
+  }
 }
+
 
 # Appending phone number to last array
 insert_index <- ncol(data1) + 1
